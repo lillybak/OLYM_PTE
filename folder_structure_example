@@ -1,0 +1,12 @@
+my_project/
+├── backend/
+│   ├── app.py
+│   ├── pyproject.toml       # Python-only backend
+│   └── .env
+└── frontend/
+    ├── package.json         ← React dependencies + scripts
+    ├── public/
+    │   └── index.html
+    └── src/
+        └── App.jsx
+

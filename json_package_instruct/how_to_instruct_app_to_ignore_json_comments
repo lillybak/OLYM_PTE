@@ -1,0 +1,47 @@
+i🐍 Python (backend)
+If you’re loading a JSON file (e.g. from json.load()) or reading a dict from request data:
+
+config = json.loads(json_text)
+
+# **Non-recursive**: filters top‑level keys
+clean_config = {k: v for k, v in config.items() if not k.startswith("_comment")}
+
+# **Recursive helper**: removes all keys anywhere in nested dictionaries
+def _strip_comments(obj):
+    if isinstance(obj, dict):
+        return {
+            k: _strip_comments(v)
+            for k, v in obj.items()
+            if not k.startswith("_comment")
+        }
+    elif isinstance(obj, list):
+        return [_strip_comments(item) for item in obj]
+    else:
+        return obj
+
+clean_config = _strip_comments(config)
+
+==================================================================
+
+🧑‍💻 JavaScript / React (frontend)
+When you fetch JSON (e.g. settings, history, or configs) that may include _comment keys:
+
+function stripComments(obj) {
+  if (obj && typeof obj === "object") {
+    if (Array.isArray(obj)) {
+      return obj.map(stripComments);
+    }
+    return Object.fromEntries(
+      Object.entries(obj)
+        .filter(([k]) => !k.startsWith("_comment"))
+        .map(([k, v]) => [k, stripComments(v)])
+    );
+  }
+  return obj;
+}
+
+// Example:
+const parsed = JSON.parse(rawJson);
+const cleanData = stripComments(parsed);
+// cleanData no longer contains any _comment keys anywhere
+

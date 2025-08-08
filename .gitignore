@@ -1,0 +1,8 @@
+.DS_Store
+.venv/
+.env
+./notebooks/.env
+./backend/.env
+./documents/*
+../data/*
+./data/*

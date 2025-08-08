@@ -1,0 +1,47 @@
+🧩 What Is package.json?
+A package.json file is the manifest for any Node.js project, specifying things like:
+
+the project’s metadata (name, version)
+
+its JavaScript dependencies
+
+scripts for running, building, and testing
+These allow npm install, npm start, or yarn build to work predictably. 
+LINKS:
+utahedu.devcamp.com
++12
+GeeksforGeeks
++1
+letsreact.org
++1
+
+In React apps (or any frontend built with Node tools), package.json defines what dependencies the UI needs—like React, React Router, Elm, CSS toolchains, types, etc. 
+Medium
+letsreact.org
+
+🗂 Why Two package.json Files?
+When you split your app into a backend (Python) folder and a frontend (React) folder, each part is a separate Node/JS or Python project:
+
+frontend/package.json
+
+Lives in the frontend/ directory
+
+Keeps all your React UI dependencies and scripts (like "start", "build", "test") 
+
+Medium
++13
+letsreact.org
++13
+Medium
++13
+
+You run npm install and npm start inside this folder only
+
+root/backend (or project root)
+
+Uses Python tooling only (e.g. pyproject.toml, requirements.txt)
+
+No package.json is needed here unless you want a full-stack monorepo with shared tools
+
+This separation makes your workflow cleaner and follows common practice to keep frontend and backend independent and reusable. 
+DEV Community
