@@ -81,7 +81,8 @@ Rules:
 - 'correct' is 0-based (0=A, 1=B, 2=C, 3=D)
 - For each choice provide a detailed explanation for why it is correct or incorrect
 - Provide relevant learning links for each choice
-- Make content specific to the topic, not generic"""
+- Make content specific to the topic, not generic
+"""
 
         prompt = f"""Generate a multiple-choice question about: {topic}
 

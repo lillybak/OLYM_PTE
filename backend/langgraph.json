@@ -1,0 +1,9 @@
+{
+  "graphs": {
+    "fastapi_ollama_mcq": {
+      "entry": "app:graph",
+      "description": "LangGraph for FastAPI Ollama MCQ service"
+    }
+  }
+}
+
