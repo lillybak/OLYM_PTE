@@ -10,13 +10,17 @@ import re
 import traceback
 from typing import Dict, List, Optional
 
-# Import agent system
+# Import agent systems
 from ollama_agent import get_ollama_agent
+from openai_agent import get_openai_agent
 from fastapi import HTTPException
 
 load_dotenv()  # Load .env file
 openai.api_key = os.getenv("OPENAI_API_KEY")
 client = openai.OpenAI()  # New OpenAI client for v1.0.0+
+
+# Agent configuration
+AGENT_TYPE = os.getenv("AGENT_TYPE", "ollama").lower()  # Default to ollama if not specified
 
 app = FastAPI()
 
@@ -72,9 +76,13 @@ async def startup_event():
     """Initialize agent and RAG system on startup"""
     global agent
     try:
-        # Initialize Ollama agent
-        agent = get_ollama_agent()
-        print("✅ Ollama agent system initialized successfully")
+        # Initialize agent based on environment variable
+        if AGENT_TYPE == "openai":
+            agent = get_openai_agent()
+            print(f"✅ OpenAI agent system initialized successfully (model: {agent.model_name})")
+        else:
+            agent = get_ollama_agent()
+            print(f"✅ Ollama agent system initialized successfully (model: {agent.model_name})")
         
         # TODO: Initialize RAG system and load documents
         # from rag_system import NPTERAGSystem
@@ -133,7 +141,11 @@ async def upload_documents():
 
 @app.get("/")
 def read_root():
-    return {"message": "FastAPI backend is running!"}
+    return {
+        "message": "FastAPI backend is running!",
+        "agent_type": AGENT_TYPE,
+        "agent_model": agent.model_name if agent else None
+    }
 
 @app.get("/api/random")
 def get_random():

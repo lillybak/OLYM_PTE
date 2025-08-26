@@ -15,7 +15,40 @@ Human ↔ Agent ↔ Tools (RAG + Web)
 
 ## 🚀 **Quick Start:**
 
-### **1. Install Dependencies:**
+### **Prerequisites:**
+- **For OpenAI Agent**: OpenAI API key from [platform.openai.com](https://platform.openai.com/api-keys)
+- **For Ollama Agent**: [Ollama](https://ollama.ai/) installed and running locally
+  ```bash
+  # Install Ollama, then pull a model:
+  ollama pull qwen:latest
+  ```
+
+### **1. Configure Environment:**
+Copy the template and configure your environment variables:
+
+```bash
+# Copy the environment template
+cp env.template .env
+
+# Edit the .env file with your configuration
+# For OpenAI: Set AGENT_TYPE=openai and add your OPENAI_API_KEY
+# For Ollama: Set AGENT_TYPE=ollama (default)
+```
+
+### **2. Configure .env File:**
+Edit your `.env` file with the appropriate settings:
+
+```bash
+# For OpenAI Agent
+AGENT_TYPE=openai
+OPENAI_API_KEY=sk-your-actual-openai-api-key-here
+
+# For Ollama Agent (default)
+AGENT_TYPE=ollama
+# No additional keys needed, but ensure Ollama is running locally
+```
+
+### **3. Install Dependencies:**
 ```bash
 cd backend
 uv sync  # or pip install -r requirements.txt
@@ -39,6 +72,7 @@ python test_agent.py
 
 ### **5. Start Backend:**
 ```bash
+# The app will automatically load your .env file
 uvicorn app:app --reload --host 0.0.0.0 --port 8000
 ```
 

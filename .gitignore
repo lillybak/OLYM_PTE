@@ -1,8 +1,17 @@
 .DS_Store
 .venv/
 .env
+.env.bak
 ./notebooks/.env
 ./backend/.env
 ./documents/*
 ../data/*
 ./data/*
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
