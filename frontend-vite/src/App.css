@@ -162,3 +162,40 @@
 .error-message strong {
   font-weight: 600;
 }
+
+/* Markdown styling for explanations */
+.feedback .markdown-content {
+  text-align: left;
+  line-height: 1.6;
+}
+
+.feedback .markdown-content h3 {
+  color: #042f1b;
+  margin: 1rem 0 0.5rem 0;
+  font-size: 1.1rem;
+  border-bottom: 2px solid #03591a;
+  padding-bottom: 0.25rem;
+}
+
+.feedback .markdown-content strong {
+  color: #042f1b;
+  font-weight: 600;
+}
+
+.feedback .markdown-content ul {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.feedback .markdown-content li {
+  margin: 0.25rem 0;
+}
+
+.feedback.incorrect .markdown-content h3 {
+  color: #3b0d0d;
+  border-bottom-color: #a31a05;
+}
+
+.feedback.incorrect .markdown-content strong {
+  color: #3b0d0d;
+}

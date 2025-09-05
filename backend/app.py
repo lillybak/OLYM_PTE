@@ -1,152 +1,222 @@
+"""
+FastAPI Backend Integration for FIXED LangGraph NPTE System
+Addresses all 4 identified issues
+"""
+
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from random import randint
-import openai
-from dotenv import load_dotenv
-import json
-import re
-import traceback
 from typing import Dict, List, Optional
+from dotenv import load_dotenv
+import traceback
+import uuid
 
-# Import agent systems
-from ollama_agent import get_ollama_agent
-from openai_agent import get_openai_agent
-from fastapi import HTTPException
+# Import the FIXED LangGraph agent
+from npte_langgraph_fixed import NPTEProfessorAgent
 
-load_dotenv()  # Load .env file
-openai.api_key = os.getenv("OPENAI_API_KEY")
-client = openai.OpenAI()  # New OpenAI client for v1.0.0+
-
-# Agent configuration
-AGENT_TYPE = os.getenv("AGENT_TYPE", "ollama").lower()  # Default to ollama if not specified
+load_dotenv()
 
 app = FastAPI()
 
-# Allow frontend (React) to connect
+# CORS setup
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, set this to your frontend URL
+    allow_origins=["*"],  # In production, set to your frontend URL
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# ============================================================================
-# PLACEHOLDER: Future LangChain/LangGraph imports
-# from langchain import LLMChain, PromptTemplate
-# from langgraph import StateGraph, END
-# from langsmith import trace
-# ============================================================================
-
-# ============================================================================
-# PLACEHOLDER: Future evaluation components
-# import ragas
-# from ragas import evaluate
-# ============================================================================
-
+# Request/Response Models
 class PromptRequest(BaseModel):
     prompt: str
 
 class MCQResponse(BaseModel):
     question: str
-    choices: list[str]
+    choices: List[str]
     correct: int
-    explanations: dict
-    links: dict
+    explanations: Dict[str, str]  # Changed to string keys for compatibility
+    links: Dict[str, List[str]]
+    session_id: str  # Add session ID for frontend tracking
 
-# Removed AnswerRequest and AnswerValidationResponse classes - no longer needed
+class AnswerRequest(BaseModel):
+    session_id: str
+    user_answer_index: int
 
-class DocumentUploadResponse(BaseModel):
-    message: str
-    documents_processed: int
-    chunks_created: int
+class EvaluationResponse(BaseModel):
+    is_correct: bool
+    explanation: str
+    study_links: List[str]
+    study_message: Optional[str] = ""
+    continue_available: bool
+    topic_selection_available: bool
+    continue_message: Optional[str] = ""
 
-# ============================================================================
-# PLACEHOLDER: User progress tracking for adaptive learning
-user_progress: Dict[str, Dict] = {}  # topic -> {correct_count, total_count, mastery_level}
-# ============================================================================
+class ContinueRequest(BaseModel):
+    session_id: str
 
-# Initialize agent
-agent = None
+# Global agent instance
+professor_agent = None
 
 @app.on_event("startup")
 async def startup_event():
-    """Initialize agent and RAG system on startup"""
-    global agent
+    """Initialize the FIXED NPTE Professor Agent on startup"""
+    global professor_agent
     try:
-        # Initialize agent based on environment variable
-        if AGENT_TYPE == "openai":
-            agent = get_openai_agent()
-            print(f"✅ OpenAI agent system initialized successfully (model: {agent.model_name})")
-        else:
-            agent = get_ollama_agent()
-            print(f"✅ Ollama agent system initialized successfully (model: {agent.model_name})")
-        
-        # TODO: Initialize RAG system and load documents
-        # from rag_system import NPTERAGSystem
-        # rag_system = NPTERAGSystem()
-        # rag_system.load_documents_from_directory("../data/")
-        # print("✅ RAG system initialized with documents")
-        
+        professor_agent = NPTEProfessorAgent()
+        print("✅ FIXED NPTE Professor Agent initialized successfully")
     except Exception as e:
-        print(f"⚠️ System initialization failed: {e}")
-        agent = None
-
-@app.post("/api/ask", response_model=MCQResponse)
-async def ask(request: PromptRequest):
-    """Generate MCQ using agent with tool-belt"""
-    global agent
-    
-    if agent is None:
-        raise HTTPException(status_code=503, detail="Agent system not initialized")
-    
-    try:
-        mcq_data = agent.generate_mcq(request.prompt)
-        return MCQResponse(**mcq_data)
-    except Exception as e:
-        print(f"Ollama MCQ generation failed: {e}")
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Failed to generate MCQ for {request.prompt}: {e}")
-
-# Removed /api/validate_answer endpoint - validation now handled client-side
-
-@app.post("/api/upload_documents", response_model=DocumentUploadResponse)
-async def upload_documents():
-    """Upload and process documents for RAG"""
-    try:
-        # This will be handled by the agent's RAG system
-        return DocumentUploadResponse(
-            message="Documents processed by agent RAG system",
-            documents_processed=1,
-            chunks_created=1
-        )
-        
-    except Exception as e:
-        print(f"Document upload failed: {e}")
-        return DocumentUploadResponse(
-            message=f"Document processing failed: {str(e)}",
-            documents_processed=0,
-            chunks_created=0
-        )
-
-# ============================================================================
-# PLACEHOLDER: Future endpoints for evaluation, etc.
-# @app.post("/api/evaluate_system")
-# async def evaluate_system():
-#     """Run RAGAS evaluation."""
-#     pass
-# ============================================================================
+        print(f"❌ Failed to initialize agent: {e}")
+        professor_agent = None
 
 @app.get("/")
 def read_root():
+    """Health check endpoint"""
     return {
-        "message": "FastAPI backend is running!",
-        "agent_type": AGENT_TYPE,
-        "agent_model": agent.model_name if agent else None
+        "message": "NPTE LangGraph System (FIXED) is running!",
+        "agent_status": "available" if professor_agent else "unavailable",
+        "version": "fixed_v1.0"
     }
+
+@app.post("/api/ask", response_model=MCQResponse)
+async def generate_question(request: PromptRequest):
+    """
+    FIXED: Generate MCQ with topic-focused links and proper explanations
+    Addresses Issue #1 (unrelated links) and Issue #3 (explanation format)
+    """
+    global professor_agent
+    
+    if professor_agent is None:
+        raise HTTPException(status_code=503, detail="Professor agent not initialized")
+    
+    try:
+        topic = request.prompt.strip()
+        session_id = str(uuid.uuid4())  # Generate unique session ID
+        
+        print(f"🎓 Generating NPTE question for topic: {topic}")
+        
+        # Use the FIXED agent
+        mcq_data = await professor_agent.generate_mcq(topic, session_id)
+        
+        # Convert to string keys for frontend compatibility
+        explanations_str = {str(k): str(v) for k, v in mcq_data.get("explanations", {}).items()}
+        links_str = {str(k): v for k, v in mcq_data.get("links", {}).items()}
+        
+        response = MCQResponse(
+            question=mcq_data["question"],
+            choices=mcq_data["choices"],
+            correct=mcq_data["correct"],
+            explanations=explanations_str,
+            links=links_str,
+            session_id=session_id
+        )
+        
+        # Store session ID for evaluation (you might want to use Redis in production)
+        # For now, we'll rely on the agent's internal caching
+        
+        print(f"✅ Generated question with session ID: {session_id}")
+        return response
+        
+    except Exception as e:
+        print(f"❌ Question generation failed: {e}")
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Failed to generate question for {request.prompt}: {e}"
+        )
+
+@app.post("/api/evaluate", response_model=EvaluationResponse)
+async def evaluate_answer(request: AnswerRequest):
+    """
+    NEW ENDPOINT - FIXED: Evaluate user's answer with comprehensive explanations
+    Addresses Issue #3 (explanation format) and Issue #4 (button availability)
+    """
+    global professor_agent
+    
+    if professor_agent is None:
+        raise HTTPException(status_code=503, detail="Professor agent not initialized")
+    
+    try:
+        print(f"📊 Evaluating answer for session {request.session_id}")
+        print(f"📊 User answer index: {request.user_answer_index}")
+        print(f"📊 Request: {request}")
+        
+        # Use the FIXED agent evaluation
+        eval_result = await professor_agent.evaluate_answer(
+            request.session_id, 
+            request.user_answer_index
+        )
+        
+        response = EvaluationResponse(
+            is_correct=eval_result["is_correct"],
+            explanation=eval_result["explanation"],
+            study_links=eval_result["study_links"],
+            continue_available=eval_result["continue_available"],
+            topic_selection_available=eval_result["topic_selection_available"],
+            continue_message=eval_result.get("continue_message", "")
+        )
+        
+        print(f"✅ Evaluation completed: {'Correct' if response.is_correct else 'Incorrect'}")
+        return response
+        
+    except Exception as e:
+        print(f"❌ Answer evaluation failed: {e}")
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to evaluate answer: {e}"
+        )
+
+@app.post("/api/continue", response_model=MCQResponse)
+async def continue_same_topic(request: ContinueRequest):
+    """
+    FIXED: Continue with same topic - generate new question
+    Addresses Issue #4 (continue functionality)
+    """
+    global professor_agent
+    
+    if professor_agent is None:
+        raise HTTPException(status_code=503, detail="Professor agent not initialized")
+    
+    try:
+        print(f"🔄 Continuing same topic for session {request.session_id}")
+        
+        # Use the FIXED agent continue functionality
+        mcq_data = await professor_agent.continue_same_topic(request.session_id)
+        
+        if "error" in mcq_data:
+            raise HTTPException(status_code=400, detail=mcq_data["error"])
+        
+        # Convert to string keys for frontend compatibility
+        explanations_str = {str(k): str(v) for k, v in mcq_data.get("explanations", {}).items()}
+        links_str = {str(k): v for k, v in mcq_data.get("links", {}).items()}
+        
+        response = MCQResponse(
+            question=mcq_data["question"],
+            choices=mcq_data["choices"],
+            correct=mcq_data["correct"],
+            explanations=explanations_str,
+            links=links_str
+        )
+        
+        print(f"✅ Generated continue question")
+        return response
+        
+    except Exception as e:
+        print(f"❌ Continue same topic failed: {e}")
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to continue same topic: {e}"
+        )
 
 @app.get("/api/random")
 def get_random():
+    """Legacy endpoint for compatibility"""
+    from random import randint
     return {"number": randint(1, 100)}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)

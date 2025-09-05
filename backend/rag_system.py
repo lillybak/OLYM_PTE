@@ -34,7 +34,8 @@ class NPTERAGSystem:
     
     def __init__(self, collection_name: str = "npte_materials"):
         self.collection_name = collection_name
-        self.embeddings = OllamaEmbeddings(model="nomic-embed-text")
+        from langchain_openai import OpenAIEmbeddings
+        self.embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
         # Use persistent storage instead of in-memory
         qdrant_path = "./qdrant_data"  # Local persistent storage
         self.qdrant_client = QdrantClient(path=qdrant_path)

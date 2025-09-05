@@ -2,11 +2,17 @@
 .venv/
 .env
 .env.bak
-./notebooks/.env
-./backend/.env
-./documents/*
-../data/*
-./data/*
+notebooks/
+backend/.env
+backend/documents/
+backend/data/
+backend/data_pdf/
+backend/additional-pdfs/
+backend/qdrant_data/
+json_package_instruct/
+docs42/
+
+.vscode/
 
 # Python cache files
 __pycache__/

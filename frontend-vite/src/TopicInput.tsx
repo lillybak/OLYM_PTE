@@ -9,10 +9,13 @@ interface MCQ {
 }
 
 interface TopicInputProps {
-  onQuestionReceived: (mcq: MCQ) => void;
+  onQuestionReceived: (mcq: MCQ, sessionId: string) => void;
   onTopicSelected: (topic: string) => void;
   onClearContainer: () => void;
+  onQuestionStart?: () => void; // Callback when question generation starts
   disabled?: boolean;
+  externalLoading?: boolean; // Question generation in progress
+  evaluating?: boolean; // Answer evaluation in progress
 }
 
 const TOPICS = [
@@ -27,7 +30,7 @@ const TOPICS = [
   "System interactions"
 ];
 
-const TopicInput: React.FC<TopicInputProps> = ({ onQuestionReceived, onTopicSelected, onClearContainer, disabled = false }) => {
+const TopicInput: React.FC<TopicInputProps> = ({ onQuestionReceived, onTopicSelected, onClearContainer, onQuestionStart, disabled = false, externalLoading = false, evaluating = false }) => {
   const [topic, setTopic] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -39,10 +42,13 @@ const TopicInput: React.FC<TopicInputProps> = ({ onQuestionReceived, onTopicSele
     // Clear the question container before making the API request
     onClearContainer();
     
+    // Notify parent that question generation is starting (AFTER clearing)
+    onQuestionStart?.();
+    
     setLoading(true);
     setError('');
     try {
-      const response = await fetch('http://localhost:8000/api/ask', {
+      const response = await fetch('/api/ask', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: topic }),
@@ -50,7 +56,8 @@ const TopicInput: React.FC<TopicInputProps> = ({ onQuestionReceived, onTopicSele
       
       if (response.ok) {
         const data = await response.json();
-        onQuestionReceived(data);
+        console.log('🎯 MCQ data with session:', data);
+        onQuestionReceived(data, data.session_id);
         onTopicSelected(topic);
         setTopic(''); // Reset to empty after submission
       } else {
@@ -82,8 +89,8 @@ const TopicInput: React.FC<TopicInputProps> = ({ onQuestionReceived, onTopicSele
           <option key={t} value={t}>{t}</option>
         ))}
       </select>
-      <button type="submit" disabled={loading || !topic || disabled}>
-        {loading ? 'Generating...' : 'Get MCQ'}
+      <button type="submit" disabled={loading || externalLoading || evaluating || !topic || disabled}>
+        {externalLoading ? 'In Progress...' : evaluating ? 'Please wait...' : 'Generate Question'}
       </button>
       {error && (
         <div className="error-message" style={{ marginTop: '0.5rem', fontSize: '0.9rem' }}>

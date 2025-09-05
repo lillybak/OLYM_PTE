@@ -67,3 +67,20 @@ export default tseslint.config([
   },
 ])
 ```
+
+## START 
+**Backend:**  
+uv sync  
+soenv (my alias)  
+uvicorn app:app --reload --host 0.0.0.0 --port 8000  
+
+
+**Frontend:**    
+npm install
+npm run dev
+
+### link into CANVA:  
+cloudflared tunnel --url http://localhost:5173  
+
+
+
